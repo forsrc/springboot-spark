@@ -1,5 +1,6 @@
 package com.forsrc.spark.web.wordcount.controller;
 
+import java.io.FileNotFoundException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +12,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,8 +39,8 @@ public class WordCountController {
 
     @RequestMapping(value = "/wordcount", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
             MediaType.APPLICATION_JSON_UTF8_VALUE })
-    public ResponseEntity<Map<String, Integer>> wordCount(UriComponentsBuilder ucBuilder) {
-        Map<String, Integer> map = wordCountService.wordCount(new ClassPathResource("WordCount.txt").getPath());
+    public ResponseEntity<Map<String, Integer>> wordCount(UriComponentsBuilder ucBuilder) throws FileNotFoundException {
+        Map<String, Integer> map = wordCountService.wordCount(ResourceUtils.getFile("classpath:WordCount.txt").getAbsolutePath());
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
 }
