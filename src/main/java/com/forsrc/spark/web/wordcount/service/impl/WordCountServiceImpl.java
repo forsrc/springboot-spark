@@ -34,8 +34,9 @@ public class WordCountServiceImpl implements WordCountService {
         Map<String, Integer> map = new HashMap<>();
         JavaRDD<String> lines = javaSparkContext.textFile(filename);
         JavaRDD<String> words = lines.flatMap(word -> Arrays.asList(SPACE.split(word)));
-        JavaPairRDD<String, Integer> ones = words.mapToPair(s -> new Tuple2<>(s, 1));
-        JavaPairRDD<String, Integer> counts = ones.reduceByKey((Integer i1, Integer i2) -> (i1 + i2));
+        JavaPairRDD<String, Integer> counts = words
+                .mapToPair(word -> new Tuple2<>(word, 1))
+                .reduceByKey((Integer i1, Integer i2) -> (i1 + i2));
         List<Tuple2<String, Integer>> output = counts.collect();
         output.forEach(item -> map.put(item._1(), item._2()));
 
