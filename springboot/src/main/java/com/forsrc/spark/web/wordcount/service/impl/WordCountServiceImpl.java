@@ -135,9 +135,14 @@ public class WordCountServiceImpl implements WordCountService {
     public int livyCount(String filename, String word) {
         try {
             LivyClient client = new LivyClientBuilder(true).setURI(new URI("http://127.0.0.1:8998")).build();
-            Thread.sleep(20000);
-            Object str = client.uploadJar(new File("springboot-spark/target/springboot-spark-0.0.1-SNAPSHOT.jar")).get();
-            System.out.println("object::" + str);
+            Thread.sleep(1000);
+
+            for (String s : System.getProperty("java.class.path").split(File.pathSeparator)) {
+                if (new File(s).getName().startsWith("forsrc-springboot-spark-job")) {
+                  client.uploadJar(new File(s)).get();
+                  break;
+                }
+              }
             JobHandle<Integer> handle = client.submit(new WordCountJob(filename, word));
             return handle.get();
         } catch (IOException e) {
