@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.ResourceUtils;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,6 +42,15 @@ public class WordCountController {
             MediaType.APPLICATION_JSON_UTF8_VALUE })
     public ResponseEntity<Map<String, Integer>> wordCount(UriComponentsBuilder ucBuilder) throws FileNotFoundException {
         Map<String, Integer> map = wordCountService.wordCount(ResourceUtils.getFile("classpath:WordCount.txt").getAbsolutePath());
+        return new ResponseEntity<>(map, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/wordcount/{word}", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
+            MediaType.APPLICATION_JSON_UTF8_VALUE })
+    public ResponseEntity<Map<String, Integer>> count(@PathVariable("word") String word,UriComponentsBuilder ucBuilder) throws FileNotFoundException {
+        Map<String, Integer> map = new HashMap<>();
+        int count = wordCountService.count(ResourceUtils.getFile("classpath:WordCount.txt").getAbsolutePath(), word);
+        map.put(word, count);
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
 }
