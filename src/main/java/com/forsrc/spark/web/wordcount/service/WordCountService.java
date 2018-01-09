@@ -8,5 +8,7 @@ import org.springframework.stereotype.Service;
 @Service
 public interface WordCountService {
 
-    public Map<String, Integer> wordCount(String filename) ;
+    public Map<String, Integer> wordCount(String filename);
+
+    public int count(String filename, String str);
 }
