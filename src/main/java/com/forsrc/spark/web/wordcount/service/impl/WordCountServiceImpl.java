@@ -2,10 +2,15 @@ package com.forsrc.spark.web.wordcount.service.impl;
 
 import static org.apache.spark.sql.functions.col;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -19,6 +24,10 @@ import org.apache.spark.sql.functions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.cloudera.livy.JobHandle;
+import com.cloudera.livy.LivyClient;
+import com.cloudera.livy.LivyClientBuilder;
+import com.forsrc.spark.livy.job.WordCountJob;
 import com.forsrc.spark.web.wordcount.service.WordCountService;
 
 import scala.Tuple2;
@@ -120,5 +129,26 @@ public class WordCountServiceImpl implements WordCountService {
 
         Integer count = map.get(str);
         return count == null ? 0 : count.intValue();
+    }
+
+    @Override
+    public int livyCount(String filename, String word) {
+        try {
+            LivyClient client = new LivyClientBuilder(true).setURI(new URI("http://127.0.0.1:8998")).build();
+            Thread.sleep(20000);
+            Object str = client.uploadJar(new File("springboot-spark/target/springboot-spark-0.0.1-SNAPSHOT.jar")).get();
+            System.out.println("object::" + str);
+            JobHandle<Integer> handle = client.submit(new WordCountJob(filename, word));
+            return handle.get();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 }

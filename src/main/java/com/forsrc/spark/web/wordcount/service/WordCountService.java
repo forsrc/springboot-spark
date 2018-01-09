@@ -11,4 +11,6 @@ public interface WordCountService {
     public Map<String, Integer> wordCount(String filename);
 
     public int count(String filename, String str);
+
+    public int livyCount(String filename, String str);
 }

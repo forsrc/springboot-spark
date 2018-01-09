@@ -53,4 +53,13 @@ public class WordCountController {
         map.put(word, count);
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
+
+    @RequestMapping(value = "/livy/wordcount/{word}", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
+            MediaType.APPLICATION_JSON_UTF8_VALUE })
+    public ResponseEntity<Map<String, Integer>> livycount(@PathVariable("word") String word,UriComponentsBuilder ucBuilder) throws FileNotFoundException {
+        Map<String, Integer> map = new HashMap<>();
+        int count = wordCountService.livyCount(ResourceUtils.getFile("classpath:WordCount.txt").getAbsolutePath(), word);
+        map.put(word, count);
+        return new ResponseEntity<>(map, HttpStatus.OK);
+    }
 }

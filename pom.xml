@@ -129,6 +129,11 @@
             <artifactId>jackson-core</artifactId>
             <!-- <version>2.9.3</version> -->
         </dependency>
+        <dependency>
+            <groupId>com.cloudera.livy</groupId>
+            <artifactId>livy-client-http</artifactId>
+            <version>0.3.0</version>
+        </dependency>
     </dependencies>
 
     <build>
