@@ -36,8 +36,12 @@ import scala.Tuple2;
 @Service
 public class WordCountServiceImpl implements WordCountService {
 
+    
     @Autowired
     private transient JavaSparkContext javaSparkContext;
+    
+    @Autowired
+    private LivyClient livyClient;
 
     @Autowired
     private SparkSession sparkSession;
@@ -143,27 +147,22 @@ public class WordCountServiceImpl implements WordCountService {
 
     @Override
     public int livyCount(String filename, String word) {
-        LivyClient client = null;
+
         try {
-            client = new LivyClientBuilder(true).setURI(new URI("http://127.0.0.1:8998")).build();
- 
-            Object obj = client.uploadJar(getJarFile(WordCountJob.class)).get();
+            File jar = getJarFile(WordCountJob.class);
+            System.out.println("jar --> " + jar);
+            Object obj = livyClient.uploadJar(jar).get();
             System.out.println("uploadJar --> " + obj);
 
-            JobHandle<Integer> handle = client.submit(new WordCountJob(filename, word));
+            JobHandle<Integer> handle = livyClient.submit(new WordCountJob(filename, word));
             return handle.get();
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
             e.printStackTrace();
         } finally {
-            if (client != null) {
-                client.stop(true);
-            }
         }
         return 0;
     }

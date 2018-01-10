@@ -6,7 +6,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.util.ResourceUtils;
 
+import com.cloudera.livy.LivyClient;
+import com.cloudera.livy.LivyClientBuilder;
+
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -24,6 +30,9 @@ public class SparkConfig {
 
     @Value("${spark.master}")
     private String master;
+
+    @Value("${livy.url}")
+    private String livyUrl;
 
     @Bean
     public SparkConf sparkConf() throws FileNotFoundException {
@@ -57,5 +66,10 @@ public class SparkConfig {
     @Bean
     public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
         return new PropertySourcesPlaceholderConfigurer();
+    }
+
+    @Bean
+    public LivyClient livyClient() throws IOException, URISyntaxException {
+        return new LivyClientBuilder(true).setURI(new URI(livyUrl)).build();
     }
 }
