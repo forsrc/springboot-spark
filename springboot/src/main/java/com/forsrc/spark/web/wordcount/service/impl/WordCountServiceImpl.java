@@ -3,6 +3,7 @@ package com.forsrc.spark.web.wordcount.service.impl;
 import static org.apache.spark.sql.functions.col;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
