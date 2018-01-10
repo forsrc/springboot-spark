@@ -142,16 +142,13 @@ public class WordCountServiceImpl implements WordCountService {
 
     @Override
     public int livyCount(String filename, String word) {
+        LivyClient client = null;
         try {
-            LivyClient client = new LivyClientBuilder(true).setURI(new URI("http://127.0.0.1:8998")).build();
-            Thread.sleep(1000);
+            client = new LivyClientBuilder(true).setURI(new URI("http://127.0.0.1:8998")).build();
+ 
+            Object obj = client.uploadJar(getJarFile(WordCountJob.class)).get();
+            System.out.println("uploadJar --> " + obj);
 
-            for (String s : System.getProperty("java.class.path").split(File.pathSeparator)) {
-                if (new File(s).getName().startsWith("forsrc-springboot-spark-job")) {
-                  client.uploadJar(new File(s)).get();
-                  break;
-                }
-              }
             JobHandle<Integer> handle = client.submit(new WordCountJob(filename, word));
             return handle.get();
         } catch (IOException e) {
@@ -162,7 +159,31 @@ public class WordCountServiceImpl implements WordCountService {
             e.printStackTrace();
         } catch (ExecutionException e) {
             e.printStackTrace();
+        } finally {
+            if (client != null) {
+                client.stop(true);
+            }
         }
         return 0;
     }
+
+    public static File getJarFile(Class<?> cls) throws FileNotFoundException{
+        String file = cls.getProtectionDomain().getCodeSource().getLocation().getFile();
+        if (file.endsWith(".jar")) {
+            return new File(file);
+        }
+        if (file.endsWith("/")) {
+            file = file.substring(0, file.lastIndexOf("/"));
+        }
+        String path = file.substring(0, file.lastIndexOf("/") + 1);
+
+        File[] files = new File(path).listFiles();
+        for (File f : files) {
+            if (f.getName().startsWith("forsrc-springboot-spark-job") && f.getName().endsWith(".jar")) {
+                return f;
+            }
+        }
+        throw new FileNotFoundException("not found jar for " + cls.getName());
+    }
+
 }
