@@ -23,12 +23,14 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.cloudera.livy.JobHandle;
 import com.cloudera.livy.LivyClient;
 import com.cloudera.livy.LivyClientBuilder;
 import com.forsrc.spark.livy.job.WordCountJob;
+import com.forsrc.spark.utils.LivyUtils;
 import com.forsrc.spark.web.wordcount.service.WordCountService;
 
 import scala.Tuple2;
@@ -36,12 +38,11 @@ import scala.Tuple2;
 @Service
 public class WordCountServiceImpl implements WordCountService {
 
-    
+    @Value("${livy.url}")
+    private String livyUrl;
+
     @Autowired
     private transient JavaSparkContext javaSparkContext;
-    
-    @Autowired
-    private LivyClient livyClient;
 
     @Autowired
     private SparkSession sparkSession;
@@ -149,41 +150,14 @@ public class WordCountServiceImpl implements WordCountService {
     public int livyCount(String filename, String word) {
 
         try {
-            File jar = getJarFile(WordCountJob.class);
-            System.out.println("jar --> " + jar);
-            Object obj = livyClient.uploadJar(jar).get();
-            System.out.println("uploadJar --> " + obj);
-
-            JobHandle<Integer> handle = livyClient.submit(new WordCountJob(filename, word));
-            return handle.get();
-        } catch (IOException e) {
+            return LivyUtils.handle(livyUrl, WordCountJob.class, new WordCountJob(filename, word));
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } finally {
+            return -1;
         }
-        return 0;
+
     }
 
-    public static File getJarFile(Class<?> cls) throws FileNotFoundException{
-        String file = cls.getProtectionDomain().getCodeSource().getLocation().getFile();
-        if (file.endsWith(".jar")) {
-            return new File(file);
-        }
-        if (file.endsWith("/")) {
-            file = file.substring(0, file.lastIndexOf("/"));
-        }
-        String path = file.substring(0, file.lastIndexOf("/") + 1);
 
-        File[] files = new File(path).listFiles();
-        for (File f : files) {
-            if (f.getName().startsWith("forsrc-springboot-spark-job") && f.getName().endsWith(".jar")) {
-                return f;
-            }
-        }
-        throw new FileNotFoundException("not found jar for " + cls.getName());
-    }
 
 }
