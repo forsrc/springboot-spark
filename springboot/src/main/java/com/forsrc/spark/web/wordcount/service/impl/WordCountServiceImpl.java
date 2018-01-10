@@ -126,6 +126,15 @@ public class WordCountServiceImpl implements WordCountService {
          .toJavaRDD()
          .collect()
          .forEach(i -> map.put(i.getString(0), (int)i.getLong(1)));
+   
+        // or
+        t.createOrReplaceTempView("wordcount");
+        Dataset<Row> sqlDF = sparkSession.sql(String.format("SELECT * FROM wordcount WHERE word = \"%s\"", str));
+
+        sqlDF.show();
+        sqlDF.toJavaRDD()
+             .collect()
+             .forEach(i -> map.put(i.getString(0), (int)i.getLong(1)));
 
         Integer count = map.get(str);
         return count == null ? 0 : count.intValue();
