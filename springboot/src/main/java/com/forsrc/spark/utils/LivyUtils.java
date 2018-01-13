@@ -24,7 +24,7 @@ public class LivyUtils {
         LivyClient livyClient = null;
         try {
             livyClient = getLivyClient(livyUrl);
-            livyClient.uploadFile(getJarFile(cls)).get();
+            //livyClient.uploadFile(getJarFile(cls)).get();
 
             JobHandle<T> handle = livyClient.submit(job);
             return handle.get();

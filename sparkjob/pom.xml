@@ -106,6 +106,22 @@
             <artifactId>livy-client-http</artifactId>
             <version>0.3.0</version>
         </dependency>
+        <!-- <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-examples_2.10</artifactId>
+            <version>1.0.2</version>
+        </dependency> -->
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${spark.scala.version}</artifactId>
+            <version>${spark.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>

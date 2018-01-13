@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
+import org.apache.hadoop.yarn.webapp.example.HelloWorld;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -26,9 +27,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.bluebreezecf.tools.sparkjobserver.api.ISparkJobServerClient;
+import com.bluebreezecf.tools.sparkjobserver.api.ISparkJobServerClientConstants;
+import com.bluebreezecf.tools.sparkjobserver.api.SparkJobConfig;
+import com.bluebreezecf.tools.sparkjobserver.api.SparkJobInfo;
+import com.bluebreezecf.tools.sparkjobserver.api.SparkJobJarInfo;
+import com.bluebreezecf.tools.sparkjobserver.api.SparkJobResult;
+import com.bluebreezecf.tools.sparkjobserver.api.SparkJobServerClientException;
+import com.bluebreezecf.tools.sparkjobserver.api.SparkJobServerClientFactory;
 import com.cloudera.livy.JobHandle;
 import com.cloudera.livy.LivyClient;
 import com.cloudera.livy.LivyClientBuilder;
+import com.forsrc.spark.livy.job.HelloWorldJob;
 import com.forsrc.spark.livy.job.WordCountJob;
 import com.forsrc.spark.utils.LivyUtils;
 import com.forsrc.spark.web.wordcount.service.WordCountService;
@@ -40,6 +50,8 @@ public class WordCountServiceImpl implements WordCountService {
 
     @Value("${livy.url}")
     private String livyUrl;
+    @Value("${jobserver.url}")
+    private String jobserverUrl;
 
     @Autowired
     private transient JavaSparkContext javaSparkContext;
@@ -57,33 +69,24 @@ public class WordCountServiceImpl implements WordCountService {
     public Map<String, Integer> wordCount2(String filename) {
         final Map<String, Integer> map = new HashMap<>();
 
-        Dataset<String> df = sparkSession.read()
-                                         .text(filename)
-                                         .as(Encoders.STRING());
+        Dataset<String> df = sparkSession.read().text(filename).as(Encoders.STRING());
         df.show();
         df.printSchema();
 
         Dataset<String> words = df.flatMap(word -> {
-                                            System.out.println("--> " + word);
-                                            return Arrays.asList(SPACE.split(word)).iterator();
-                                        }, Encoders.STRING())
-                                  .filter(word -> !word.isEmpty())
-                                  .coalesce(1);
-
+            System.out.println("--> " + word);
+            return Arrays.asList(SPACE.split(word)).iterator();
+        }, Encoders.STRING()).filter(word -> !word.isEmpty()).coalesce(1);
 
         words.printSchema();
 
-        Dataset<Row> t = words.groupBy("value")
-                              .count()
-                              .toDF("word", "count");
+        Dataset<Row> t = words.groupBy("value").count().toDF("word", "count");
 
         t = t.sort(functions.desc("count"));
- 
-        //t.toJavaRDD().saveAsTextFile("wordcount.out");
 
-        t.toJavaRDD()
-         .collect()
-         .forEach(i -> map.put(i.getString(0), (int)i.getLong(1)));
+        t.toJavaRDD().saveAsTextFile("wordcount.out");
+
+        t.toJavaRDD().collect().forEach(i -> map.put(i.getString(0), (int) i.getLong(1)));
         return map;
     }
 
@@ -92,12 +95,10 @@ public class WordCountServiceImpl implements WordCountService {
         Map<String, Integer> map = new HashMap<>();
         JavaRDD<String> lines = javaSparkContext.textFile(filename);
         JavaRDD<String> words = lines.flatMap(word -> Arrays.asList(SPACE.split(word)).iterator());
-        JavaPairRDD<String, Integer> counts = words
-                .mapToPair(word -> new Tuple2<>(word, 1))
+        JavaPairRDD<String, Integer> counts = words.mapToPair(word -> new Tuple2<>(word, 1))
                 .reduceByKey((Integer i1, Integer i2) -> (i1 + i2));
         List<Tuple2<String, Integer>> output = counts.collect();
         output.forEach(item -> map.put(item._1(), item._2()));
-
 
         return map;
     }
@@ -105,42 +106,29 @@ public class WordCountServiceImpl implements WordCountService {
     @Override
     public int count(String filename, String str) {
         final Map<String, Integer> map = new HashMap<>();
- 
-        Dataset<String> df = sparkSession.read()
-                                         .text(filename)
-                                         .as(Encoders.STRING());
+
+        Dataset<String> df = sparkSession.read().text(filename).as(Encoders.STRING());
         df.show();
         df.printSchema();
 
         Dataset<String> words = df.flatMap(word -> Arrays.asList(SPACE.split(word)).iterator(), Encoders.STRING())
-                                  .filter(word -> !word.isEmpty())
-                                  .coalesce(1);
-
+                .filter(word -> !word.isEmpty()).coalesce(1);
 
         words.printSchema();
 
-        Dataset<Row> t = words.groupBy("value")
-                              .count()
-                              .toDF("word", "count");
+        Dataset<Row> t = words.groupBy("value").count().toDF("word", "count");
 
         t = t.sort(functions.desc("count"));
- 
-        
-        t.select("word", "count")
-         .filter(col("word")
-         .equalTo(str))
-         .toJavaRDD()
-         .collect()
-         .forEach(i -> map.put(i.getString(0), (int)i.getLong(1)));
-   
+
+        t.select("word", "count").filter(col("word").equalTo(str)).toJavaRDD().collect()
+                .forEach(i -> map.put(i.getString(0), (int) i.getLong(1)));
+
         // or
         t.createOrReplaceTempView("wordcount");
         Dataset<Row> sqlDF = sparkSession.sql(String.format("SELECT * FROM wordcount WHERE word = \"%s\"", str));
 
         sqlDF.show();
-        sqlDF.toJavaRDD()
-             .collect()
-             .forEach(i -> map.put(i.getString(0), (int)i.getLong(1)));
+        sqlDF.toJavaRDD().collect().forEach(i -> map.put(i.getString(0), (int) i.getLong(1)));
 
         Integer count = map.get(str);
         return count == null ? 0 : count.intValue();
@@ -158,6 +146,81 @@ public class WordCountServiceImpl implements WordCountService {
 
     }
 
+    @Override
+    public String livyHelloworld() {
+        try {
+            return LivyUtils.handle(livyUrl, HelloWorldJob.class, new HelloWorldJob());
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
 
+    @Override
+    public String jobserverHelloworld() {
+
+        ISparkJobServerClient client = null;
+        try {
+            client = SparkJobServerClientFactory.getInstance().createSparkJobServerClient(jobserverUrl);
+            // GET /jars
+            List<SparkJobJarInfo> jarInfos = client.getJars();
+            for (SparkJobJarInfo jarInfo : jarInfos) {
+                System.out.println(jarInfo.toString());
+            }
+
+            // POST /jars/<appName>
+            client.uploadSparkJobJar(LivyUtils.getJarFile(com.forsrc.spark.job.WordCount.class), "spark-test");
+
+            // GET /contexts
+            List<String> contexts = client.getContexts();
+            System.out.println("Current contexts:");
+            for (String cxt : contexts) {
+                System.out.println(cxt);
+            }
+
+            // POST /contexts/<name>--Create context with name ctxTest and null parameter
+            client.createContext("ctxTest", null);
+            // POST /contexts/<name>--Create context with parameters
+            Map<String, String> params = new HashMap<String, String>();
+            params.put(ISparkJobServerClientConstants.PARAM_MEM_PER_NODE, "512m");
+            params.put(ISparkJobServerClientConstants.PARAM_NUM_CPU_CORES, "10");
+            client.createContext("cxtTest2", params);
+
+            // DELETE /contexts/<name>
+            client.deleteContext("ctxTest");
+
+            // GET /jobs
+            List<SparkJobInfo> jobInfos = client.getJobs();
+            System.out.println("Current jobs:");
+            for (SparkJobInfo jobInfo : jobInfos) {
+                System.out.println(jobInfo);
+            }
+
+            // Post /jobs---Create a new job
+            params.put(ISparkJobServerClientConstants.PARAM_APP_NAME, "spark-test");
+            params.put(ISparkJobServerClientConstants.PARAM_CLASS_PATH, "com.forsrc.spark.job.WordCount");
+            // 1.start a spark job asynchronously and just get the status information
+            SparkJobResult result = client.startJob("input.string= fdsafd dfsf blullkfdsoflaw fsdfs", params);
+            System.out.println(result);
+
+            // 2.start a spark job synchronously and wait until the result
+            params.put(ISparkJobServerClientConstants.PARAM_CONTEXT, "cxtTest2");
+            params.put(ISparkJobServerClientConstants.PARAM_SYNC, "true");
+            result = client.startJob("input.string= fdsafd dfsf blullkfdsoflaw fsdffdsfsfs", params);
+            System.out.println(result);
+
+            // GET /jobs/<jobId>---Gets the result or status of a specific job
+            result = client.getJobResult("fdsfsfdfwfef");
+            System.out.println(result);
+
+            // GET /jobs/<jobId>/config - Gets the job configuration
+            SparkJobConfig jobConfig = client.getConfig("fdsfsfdfwfef");
+            System.out.println(jobConfig);
+        } catch (SparkJobServerClientException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
 }

@@ -13,4 +13,8 @@ public interface WordCountService {
     public int count(String filename, String str);
 
     public int livyCount(String filename, String str);
+
+    public String livyHelloworld();
+
+    public String jobserverHelloworld();
 }

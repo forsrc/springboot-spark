@@ -1,12 +1,15 @@
 
 server:
-  port: 8080
+  port: 8099
 
 
 spark:
   appName: springbootspark
-  home: 
+  home:
   master: local
 
 livy:
   url: http://127.0.0.1:8998
+
+jobserver:
+  url: http://127.0.0.1:8090

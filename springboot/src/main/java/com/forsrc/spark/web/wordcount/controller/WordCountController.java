@@ -56,10 +56,28 @@ public class WordCountController {
 
     @RequestMapping(value = "/livy/wordcount/{word}", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
             MediaType.APPLICATION_JSON_UTF8_VALUE })
-    public ResponseEntity<Map<String, Integer>> livycount(@PathVariable("word") String word,UriComponentsBuilder ucBuilder) throws FileNotFoundException {
+    public ResponseEntity<Map<String, Integer>> livycount(@PathVariable("word") String word, UriComponentsBuilder ucBuilder) throws FileNotFoundException {
         Map<String, Integer> map = new HashMap<>();
         int count = wordCountService.livyCount(ResourceUtils.getFile("classpath:WordCount.txt").getAbsolutePath(), word);
         map.put(word, count);
+        return new ResponseEntity<>(map, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/livy/helloworld", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
+            MediaType.APPLICATION_JSON_UTF8_VALUE })
+    public ResponseEntity<Map<String, String>> livyHelloworld(UriComponentsBuilder ucBuilder) throws FileNotFoundException {
+        Map<String, String> map = new HashMap<>();
+        String message = wordCountService.livyHelloworld();
+        map.put("message", message);
+        return new ResponseEntity<>(map, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/jobserver/helloworld", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
+            MediaType.APPLICATION_JSON_UTF8_VALUE })
+    public ResponseEntity<Map<String, String>> jobserverHelloworld(UriComponentsBuilder ucBuilder) throws FileNotFoundException {
+        Map<String, String> map = new HashMap<>();
+        String message = wordCountService.jobserverHelloworld();
+        map.put("message", message);
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
 }
