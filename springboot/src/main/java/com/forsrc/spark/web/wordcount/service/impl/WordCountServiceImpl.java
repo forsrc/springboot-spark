@@ -222,7 +222,7 @@ public class WordCountServiceImpl implements WordCountService {
             // GET /jobs/<jobId>/config - Gets the job configuration
             //SparkJobConfig jobConfig = client.getConfig("A");
             //System.out.println("--> " + jobConfig);
-            return result;
+            return result.toString();
         } catch (SparkJobServerClientException e) {
             e.printStackTrace();
         } catch (Exception e) {
