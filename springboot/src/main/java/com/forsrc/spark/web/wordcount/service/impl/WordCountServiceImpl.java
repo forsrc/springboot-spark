@@ -187,7 +187,8 @@ public class WordCountServiceImpl implements WordCountService {
     public Map<String, Object> jobserverWordCountExample() throws Exception {
         File jar = JarFileUtils.getJarFile(spark.jobserver.WordCountExample.class);
         Map<String, Object> map = Collections.emptyMap();
-        HttpPost postMethod = new HttpPost(String.format("%s/jobs?appName=%s&classPath=spark.jobserver.WordCountExample", jobserverUrl, jar.getName()));
+        HttpPost postMethod = new HttpPost(String
+                .format("%s/jobs?appName=%s&classPath=spark.jobserver.WordCountExample", jobserverUrl, jar.getName()));
         final CloseableHttpClient httpClient = HttpClientBuilder.create().build();
         try {
             StringEntity strEntity = new StringEntity("input.string = a b c a b see");
@@ -197,13 +198,14 @@ public class WordCountServiceImpl implements WordCountService {
             HttpResponse response = httpClient.execute(postMethod);
             int statusCode = response.getStatusLine().getStatusCode();
             System.out.println(String.format("statusCode: %s; %s", statusCode, response));
-            if (statusCode == HttpStatus.SC_OK || statusCode == HttpStatus.SC_ACCEPTED || statusCode == HttpStatus.SC_BAD_REQUEST) {
+            if (statusCode == HttpStatus.SC_OK || statusCode == HttpStatus.SC_ACCEPTED
+                    || statusCode == HttpStatus.SC_BAD_REQUEST) {
                 map = objectMapper.readValue(IOUtils.toString(response.getEntity().getContent(), "UTF-8"),
                         new TypeReference<HashMap<String, Object>>() {
                         });
 
             } else {
-                new RuntimeException(String.format("statusCode: %s; %s", statusCode, response));
+                throw new RuntimeException(String.format("statusCode: %s; %s", statusCode, response));
             }
 
         } catch (Exception e) {
@@ -231,13 +233,14 @@ public class WordCountServiceImpl implements WordCountService {
             entity.setContentType("application/java-archive");
             HttpResponse response = httpClient.execute(postMethod);
             int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode == HttpStatus.SC_OK || statusCode == HttpStatus.SC_ACCEPTED || statusCode == HttpStatus.SC_BAD_REQUEST) {
+            if (statusCode == HttpStatus.SC_OK || statusCode == HttpStatus.SC_ACCEPTED
+                    || statusCode == HttpStatus.SC_BAD_REQUEST) {
                 map = objectMapper.readValue(IOUtils.toString(response.getEntity().getContent(), "UTF-8"),
                         new TypeReference<HashMap<String, Object>>() {
                         });
 
             } else {
-                new RuntimeException(String.format("statusCode: %s; %s", statusCode, response));
+                throw new RuntimeException(String.format("statusCode: %s; %s", statusCode, response));
             }
 
         } catch (Exception e) {
