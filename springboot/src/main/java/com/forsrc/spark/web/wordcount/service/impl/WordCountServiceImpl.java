@@ -188,7 +188,7 @@ public class WordCountServiceImpl implements WordCountService {
         File jar = JarFileUtils.getJarFile(spark.jobserver.WordCountExample.class);
         Map<String, Object> map = Collections.emptyMap();
         HttpPost postMethod = new HttpPost(String
-                .format("%s/jobs?appName=%s&classPath=spark.jobserver.WordCountExample", jobserverUrl, jar.getName()));
+                .format("%s/jobs?appName=%s&classPath=spark.jobserver.WordCountExample&sync=true", jobserverUrl, jar.getName()));
         final CloseableHttpClient httpClient = HttpClientBuilder.create().build();
         try {
             StringEntity strEntity = new StringEntity("input.string = a b c a b see");
