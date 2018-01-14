@@ -74,10 +74,9 @@ public class WordCountController {
 
     @RequestMapping(value = "/jobserver/helloworld", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
             MediaType.APPLICATION_JSON_UTF8_VALUE })
-    public ResponseEntity<Map<String, String>> jobserverHelloworld(UriComponentsBuilder ucBuilder) throws Exception {
-        Map<String, String> map = new HashMap<>();
-        String message = wordCountService.jobserverHelloworld();
-        map.put("message", message);
+    public ResponseEntity<Map<String, Object>> jobserverHelloworld(UriComponentsBuilder ucBuilder) throws Exception {
+        Map<String, Object> map = wordCountService.jobserverWordCountExample();
+
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
 

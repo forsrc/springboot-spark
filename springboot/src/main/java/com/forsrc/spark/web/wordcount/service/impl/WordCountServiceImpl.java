@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,8 +19,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.yarn.webapp.example.HelloWorld;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -181,76 +184,36 @@ public class WordCountServiceImpl implements WordCountService {
     }
 
     @Override
-    public String jobserverHelloworld() throws Exception {
-
-        ISparkJobServerClient client = null;
+    public Map<String, Object> jobserverWordCountExample() throws Exception {
+        File jar = JarFileUtils.getJarFile(spark.jobserver.WordCountExample.class);
+        Map<String, Object> map = Collections.emptyMap();
+        HttpPost postMethod = new HttpPost(String.format("%s/jobs?appName=%s&classPath=spark.jobserver.WordCountExample", jobserverUrl, jar.getName()));
+        final CloseableHttpClient httpClient = HttpClientBuilder.create().build();
         try {
-            client = SparkJobServerClientFactory.getInstance().createSparkJobServerClient(jobserverUrl);
-            // GET /jars
-            List<SparkJobJarInfo> jarInfos = client.getJars();
-            for (SparkJobJarInfo jarInfo : jarInfos) {
-                System.out.println("--> " + jarInfo.toString());
+            StringEntity strEntity = new StringEntity("input.string = a b c a b see");
+            strEntity.setContentEncoding("UTF-8");
+            strEntity.setContentType("text/plain");
+            postMethod.setEntity(strEntity);
+            HttpResponse response = httpClient.execute(postMethod);
+            int statusCode = response.getStatusLine().getStatusCode();
+            System.out.println(String.format("statusCode: %s; %s", statusCode, response));
+            if (statusCode == HttpStatus.SC_OK || statusCode == HttpStatus.SC_ACCEPTED || statusCode == HttpStatus.SC_BAD_REQUEST) {
+                map = objectMapper.readValue(IOUtils.toString(response.getEntity().getContent(), "UTF-8"),
+                        new TypeReference<HashMap<String, Object>>() {
+                        });
+
+            } else {
+                new RuntimeException(String.format("statusCode: %s; %s", statusCode, response));
             }
 
-            // POST /jars/<appName>
-            // client.uploadSparkJobJar(LivyUtils.getJarFile(com.forsrc.spark.job.WordCount.class),
-            // "spark-test");
-
-            // GET /contexts
-            List<String> contexts = client.getContexts();
-            System.out.println("--> Current contexts:");
-            for (String cxt : contexts) {
-                System.out.println("--> " + cxt);
-            }
-
-            // DELETE /contexts/<name>
-            client.deleteContext("cxtTest");
-            // POST /contexts/<name>--Create context with name ctxTest and null parameter
-            // client.createContext("ctxTest", null);
-            // POST /contexts/<name>--Create context with parameters
-            Map<String, String> params = new HashMap<String, String>();
-            // params.put(ISparkJobServerClientConstants.PARAM_MEM_PER_NODE, "512m");
-            // params.put(ISparkJobServerClientConstants.PARAM_NUM_CPU_CORES, "10");
-            client.createContext("cxtTest", params);
-
-            SparkJobResult result = null;
-
-            // GET /jobs
-            List<SparkJobInfo> jobInfos = client.getJobs();
-            System.out.println("Current jobs:");
-            for (SparkJobInfo jobInfo : jobInfos) {
-                System.out.println("--> " + jobInfo);
-                // result = client.getJobResult(jobInfo.getJobId());
-                // System.out.println("--> " + result);
-            }
-
-            // Post /jobs---Create a new job
-            File jar = JarFileUtils.getJarFile(com.forsrc.spark.job.WordCount.class);
-            params.put(ISparkJobServerClientConstants.PARAM_APP_NAME, jar.getName());
-            params.put(ISparkJobServerClientConstants.PARAM_CLASS_PATH, "spark.jobserver.WordCountExample");
-            // 1.start a spark job asynchronously and just get the status information
-            // result = client.startJob("input.string= A B C D A B C D ABCD A B A", params);
-            // System.out.println("-->1 " + result);
-
-            // 2.start a spark job synchronously and wait until the result
-            params.put(ISparkJobServerClientConstants.PARAM_CONTEXT, "cxtTest");
-            params.put(ISparkJobServerClientConstants.PARAM_SYNC, "true");
-            result = client.startJob("input.string= A B C D A B C D ABCD A B A", params);
-            System.out.println("-->2 " + result);
-
-            // GET /jobs/<jobId>---Gets the result or status of a specific job
-            // result = client.getJobResult("A");
-            // System.out.println("-->3 " + result);
-
-            // GET /jobs/<jobId>/config - Gets the job configuration
-            // SparkJobConfig jobConfig = client.getConfig("A");
-            // System.out.println("--> " + jobConfig);
-            return result.toString();
-        } catch (SparkJobServerClientException e) {
-            throw e;
         } catch (Exception e) {
             throw e;
+        } finally {
+            if (httpClient != null) {
+                httpClient.close();
+            }
         }
+        return map;
     }
 
     @Override
@@ -259,18 +222,31 @@ public class WordCountServiceImpl implements WordCountService {
         File jar = JarFileUtils.getJarFile(cls);
         System.out.println(jar);
         // POST /jars/<appName>
-
+        Map<String, Object> map = Collections.emptyMap();
         HttpPost postMethod = new HttpPost(jobserverUrl + "/jars/" + jar.getName());
         final CloseableHttpClient httpClient = HttpClientBuilder.create().build();
-        ByteArrayEntity entity = new ByteArrayEntity(FileUtils.readFileToByteArray(jar));
-        postMethod.setEntity(entity);
-        entity.setContentType("application/java-archive");
-        HttpResponse response = httpClient.execute(postMethod);
-        int statusCode = response.getStatusLine().getStatusCode();
+        try {
+            ByteArrayEntity entity = new ByteArrayEntity(FileUtils.readFileToByteArray(jar));
+            postMethod.setEntity(entity);
+            entity.setContentType("application/java-archive");
+            HttpResponse response = httpClient.execute(postMethod);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode == HttpStatus.SC_OK || statusCode == HttpStatus.SC_ACCEPTED || statusCode == HttpStatus.SC_BAD_REQUEST) {
+                map = objectMapper.readValue(IOUtils.toString(response.getEntity().getContent(), "UTF-8"),
+                        new TypeReference<HashMap<String, Object>>() {
+                        });
 
-        Map<String, Object> map = objectMapper.readValue(IOUtils.toString(response.getEntity().getContent(), "UTF-8"),
-                new TypeReference<HashMap<String, Object>>() {
-                });
+            } else {
+                new RuntimeException(String.format("statusCode: %s; %s", statusCode, response));
+            }
+
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            if (httpClient != null) {
+                httpClient.close();
+            }
+        }
         return map;
     }
 
