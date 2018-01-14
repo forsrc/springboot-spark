@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
@@ -25,9 +28,6 @@ public class SparkConfig {
     @Value("${spark.appName}")
     private String appName;
 
-    @Value("${spark.home}")
-    private String home;
-
     @Value("${spark.master}")
     private String master;
 
@@ -36,11 +36,12 @@ public class SparkConfig {
 
         SparkConf sparkConf = new SparkConf()
                 .setAppName(appName)
-                .setSparkHome(System.getenv("SPARK_HOME"))
+                //.setSparkHome(System.getenv("SPARK_HOME"))
                 .setMaster(master)
                 //.set("spark.testing.memory", "2147480000")
                 ;
-        if (home != null) {
+        String home = System.getenv("SPARK_HOME");
+        if (!StringUtils.isEmpty(home)) {
             sparkConf.setSparkHome(home);
         }
         return sparkConf;

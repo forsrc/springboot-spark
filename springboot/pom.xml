@@ -21,6 +21,10 @@
     <dependencies>
 
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.forsrc</groupId>
             <artifactId>forsrc-springboot-spark-job</artifactId>
             <version>0.0.1-SNAPSHOT</version>

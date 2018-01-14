@@ -16,7 +16,7 @@ public interface WordCountService {
 
     public String livyHelloworld();
 
-    public String jobserverHelloworld();
+    public String jobserverHelloworld() throws Exception;
 
-    public String jobserverUpdatejar(Class<?> cls);
+    public Map<String, Object> jobserverUpdatejar(Class<?> cls) throws Exception;
 }

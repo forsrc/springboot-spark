@@ -5,8 +5,7 @@ server:
 
 spark:
   appName: springbootspark
-  home:
-  master: local
+  master:  local
 
 livy:
   url: http://127.0.0.1:8998

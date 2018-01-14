@@ -14,7 +14,14 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.yarn.webapp.example.HelloWorld;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -25,7 +32,17 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import com.bluebreezecf.tools.sparkjobserver.api.ISparkJobServerClient;
 import com.bluebreezecf.tools.sparkjobserver.api.ISparkJobServerClientConstants;
@@ -38,6 +55,8 @@ import com.bluebreezecf.tools.sparkjobserver.api.SparkJobServerClientFactory;
 import com.cloudera.livy.JobHandle;
 import com.cloudera.livy.LivyClient;
 import com.cloudera.livy.LivyClientBuilder;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.forsrc.spark.livy.job.HelloWorldJob;
 import com.forsrc.spark.livy.job.WordCountJob;
 import com.forsrc.spark.utils.JarFileUtils;
@@ -60,6 +79,12 @@ public class WordCountServiceImpl implements WordCountService {
     private SparkSession sparkSession;
 
     private static final Pattern SPACE = Pattern.compile(" ");
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public Map<String, Integer> wordCount(String filename) {
@@ -156,7 +181,7 @@ public class WordCountServiceImpl implements WordCountService {
     }
 
     @Override
-    public String jobserverHelloworld() {
+    public String jobserverHelloworld() throws Exception {
 
         ISparkJobServerClient client = null;
         try {
@@ -168,7 +193,8 @@ public class WordCountServiceImpl implements WordCountService {
             }
 
             // POST /jars/<appName>
-            //client.uploadSparkJobJar(LivyUtils.getJarFile(com.forsrc.spark.job.WordCount.class), "spark-test");
+            // client.uploadSparkJobJar(LivyUtils.getJarFile(com.forsrc.spark.job.WordCount.class),
+            // "spark-test");
 
             // GET /contexts
             List<String> contexts = client.getContexts();
@@ -183,13 +209,10 @@ public class WordCountServiceImpl implements WordCountService {
             // client.createContext("ctxTest", null);
             // POST /contexts/<name>--Create context with parameters
             Map<String, String> params = new HashMap<String, String>();
-            //params.put(ISparkJobServerClientConstants.PARAM_MEM_PER_NODE, "512m");
-            //params.put(ISparkJobServerClientConstants.PARAM_NUM_CPU_CORES, "10");
+            // params.put(ISparkJobServerClientConstants.PARAM_MEM_PER_NODE, "512m");
+            // params.put(ISparkJobServerClientConstants.PARAM_NUM_CPU_CORES, "10");
             client.createContext("cxtTest", params);
 
-            
-
-            
             SparkJobResult result = null;
 
             // GET /jobs
@@ -197,8 +220,8 @@ public class WordCountServiceImpl implements WordCountService {
             System.out.println("Current jobs:");
             for (SparkJobInfo jobInfo : jobInfos) {
                 System.out.println("--> " + jobInfo);
-                result = client.getJobResult(jobInfo.getJobId());
-                System.out.println("--> " + result);
+                // result = client.getJobResult(jobInfo.getJobId());
+                // System.out.println("--> " + result);
             }
 
             // Post /jobs---Create a new job
@@ -206,8 +229,8 @@ public class WordCountServiceImpl implements WordCountService {
             params.put(ISparkJobServerClientConstants.PARAM_APP_NAME, jar.getName());
             params.put(ISparkJobServerClientConstants.PARAM_CLASS_PATH, "spark.jobserver.WordCountExample");
             // 1.start a spark job asynchronously and just get the status information
-           // result = client.startJob("input.string= A B C D A B C D ABCD A B A", params);
-           // System.out.println("-->1 " + result);
+            // result = client.startJob("input.string= A B C D A B C D ABCD A B A", params);
+            // System.out.println("-->1 " + result);
 
             // 2.start a spark job synchronously and wait until the result
             params.put(ISparkJobServerClientConstants.PARAM_CONTEXT, "cxtTest");
@@ -216,39 +239,67 @@ public class WordCountServiceImpl implements WordCountService {
             System.out.println("-->2 " + result);
 
             // GET /jobs/<jobId>---Gets the result or status of a specific job
-            //result = client.getJobResult("A");
-            //System.out.println("-->3 " + result);
+            // result = client.getJobResult("A");
+            // System.out.println("-->3 " + result);
 
             // GET /jobs/<jobId>/config - Gets the job configuration
-            //SparkJobConfig jobConfig = client.getConfig("A");
-            //System.out.println("--> " + jobConfig);
+            // SparkJobConfig jobConfig = client.getConfig("A");
+            // System.out.println("--> " + jobConfig);
             return result.toString();
         } catch (SparkJobServerClientException e) {
-            e.printStackTrace();
+            throw e;
         } catch (Exception e) {
-            e.printStackTrace();
+            throw e;
         }
     }
 
     @Override
-    public String jobserverUpdatejar(Class<?> cls) {
-        ISparkJobServerClient client = null;
-        try {
-            client = SparkJobServerClientFactory.getInstance().createSparkJobServerClient(jobserverUrl);
-            // GET /jars
-            List<SparkJobJarInfo> jarInfos = client.getJars();
-            for (SparkJobJarInfo jarInfo : jarInfos) {
-                System.out.println("--> " + jarInfo.toString());
-            }
+    public Map<String, Object> jobserverUpdatejar(Class<?> cls) throws Exception {
 
-            File jar = JarFileUtils.getJarFile(cls);
-            // POST /jars/<appName>
-            client.uploadSparkJobJar(jar, jar.getName());
+        File jar = JarFileUtils.getJarFile(cls);
+        System.out.println(jar);
+        // POST /jars/<appName>
 
-        } catch (Exception e) {
-            return e.getMessage();
-        }
-        return "OK";
+        HttpPost postMethod = new HttpPost(jobserverUrl + "/jars/" + jar.getName());
+        final CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+        ByteArrayEntity entity = new ByteArrayEntity(FileUtils.readFileToByteArray(jar));
+        postMethod.setEntity(entity);
+        entity.setContentType("application/java-archive");
+        HttpResponse response = httpClient.execute(postMethod);
+        int statusCode = response.getStatusLine().getStatusCode();
+
+        Map<String, Object> map = objectMapper.readValue(IOUtils.toString(response.getEntity().getContent(), "UTF-8"),
+                new TypeReference<HashMap<String, Object>>() {
+                });
+        return map;
     }
 
+    public Map<String, Object> jobserverUpdatejar1(Class<?> cls) throws Exception {
+
+        File jar = JarFileUtils.getJarFile(cls);
+        System.out.println(jar);
+        // POST /jars/<appName>
+
+        Map<String, String> vars = new HashMap<String, String>();
+        vars.put("appName", jar.getName());
+
+        MultiValueMap<String, Object> bodyMap = new LinkedMultiValueMap<>();
+        bodyMap.add("jar", new FileSystemResource(jar));
+
+        // bodyMap.add("fileName", jar.getName());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        String cd = "attachment; filename=\"" + jar.getName() + "\"";
+        headers.add("Content-Disposition", cd);
+        headers.add(HttpHeaders.ACCEPT, "*/*");
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(bodyMap, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(jobserverUrl + "/jars/1" + jar.getName(),
+                HttpMethod.POST, requestEntity, String.class);
+
+        Map<String, Object> map = objectMapper.readValue(response.getBody(),
+                new TypeReference<HashMap<String, Object>>() {
+                });
+        return map;
+    }
 }
