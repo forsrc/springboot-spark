@@ -40,7 +40,7 @@ import com.cloudera.livy.LivyClient;
 import com.cloudera.livy.LivyClientBuilder;
 import com.forsrc.spark.livy.job.HelloWorldJob;
 import com.forsrc.spark.livy.job.WordCountJob;
-import com.forsrc.spark.utils.LivyUtils;
+import com.forsrc.spark.utils.JarFileUtils;
 import com.forsrc.spark.web.wordcount.service.WordCountService;
 
 import scala.Tuple2;
@@ -138,7 +138,7 @@ public class WordCountServiceImpl implements WordCountService {
     public int livyCount(String filename, String word) {
 
         try {
-            return LivyUtils.handle(livyUrl, WordCountJob.class, new WordCountJob(filename, word));
+            return JarFileUtils.handle(livyUrl, WordCountJob.class, new WordCountJob(filename, word));
         } catch (Exception e) {
             e.printStackTrace();
             return -1;
@@ -149,7 +149,7 @@ public class WordCountServiceImpl implements WordCountService {
     @Override
     public String livyHelloworld() {
         try {
-            return LivyUtils.handle(livyUrl, HelloWorldJob.class, new HelloWorldJob());
+            return JarFileUtils.handle(livyUrl, HelloWorldJob.class, new HelloWorldJob());
         } catch (Exception e) {
             return e.getMessage();
         }
@@ -164,63 +164,91 @@ public class WordCountServiceImpl implements WordCountService {
             // GET /jars
             List<SparkJobJarInfo> jarInfos = client.getJars();
             for (SparkJobJarInfo jarInfo : jarInfos) {
-                System.out.println(jarInfo.toString());
+                System.out.println("--> " + jarInfo.toString());
             }
 
             // POST /jars/<appName>
-            client.uploadSparkJobJar(LivyUtils.getJarFile(com.forsrc.spark.job.WordCount.class), "spark-test");
+            //client.uploadSparkJobJar(LivyUtils.getJarFile(com.forsrc.spark.job.WordCount.class), "spark-test");
 
             // GET /contexts
             List<String> contexts = client.getContexts();
-            System.out.println("Current contexts:");
+            System.out.println("--> Current contexts:");
             for (String cxt : contexts) {
-                System.out.println(cxt);
+                System.out.println("--> " + cxt);
             }
 
+            // DELETE /contexts/<name>
+            client.deleteContext("cxtTest");
             // POST /contexts/<name>--Create context with name ctxTest and null parameter
-            client.createContext("ctxTest", null);
+            // client.createContext("ctxTest", null);
             // POST /contexts/<name>--Create context with parameters
             Map<String, String> params = new HashMap<String, String>();
-            params.put(ISparkJobServerClientConstants.PARAM_MEM_PER_NODE, "512m");
-            params.put(ISparkJobServerClientConstants.PARAM_NUM_CPU_CORES, "10");
-            client.createContext("cxtTest2", params);
+            //params.put(ISparkJobServerClientConstants.PARAM_MEM_PER_NODE, "512m");
+            //params.put(ISparkJobServerClientConstants.PARAM_NUM_CPU_CORES, "10");
+            client.createContext("cxtTest", params);
 
-            // DELETE /contexts/<name>
-            client.deleteContext("ctxTest");
+            
+
+            
+            SparkJobResult result = null;
 
             // GET /jobs
             List<SparkJobInfo> jobInfos = client.getJobs();
             System.out.println("Current jobs:");
             for (SparkJobInfo jobInfo : jobInfos) {
-                System.out.println(jobInfo);
+                System.out.println("--> " + jobInfo);
+                result = client.getJobResult(jobInfo.getJobId());
+                System.out.println("--> " + result);
             }
 
             // Post /jobs---Create a new job
-            params.put(ISparkJobServerClientConstants.PARAM_APP_NAME, "spark-test");
-            params.put(ISparkJobServerClientConstants.PARAM_CLASS_PATH, "com.forsrc.spark.job.WordCount");
+            File jar = JarFileUtils.getJarFile(com.forsrc.spark.job.WordCount.class);
+            params.put(ISparkJobServerClientConstants.PARAM_APP_NAME, jar.getName());
+            params.put(ISparkJobServerClientConstants.PARAM_CLASS_PATH, "spark.jobserver.WordCountExample");
             // 1.start a spark job asynchronously and just get the status information
-            SparkJobResult result = client.startJob("input.string= fdsafd dfsf blullkfdsoflaw fsdfs", params);
-            System.out.println(result);
+           // result = client.startJob("input.string= A B C D A B C D ABCD A B A", params);
+           // System.out.println("-->1 " + result);
 
             // 2.start a spark job synchronously and wait until the result
-            params.put(ISparkJobServerClientConstants.PARAM_CONTEXT, "cxtTest2");
+            params.put(ISparkJobServerClientConstants.PARAM_CONTEXT, "cxtTest");
             params.put(ISparkJobServerClientConstants.PARAM_SYNC, "true");
-            result = client.startJob("input.string= fdsafd dfsf blullkfdsoflaw fsdffdsfsfs", params);
-            System.out.println(result);
+            result = client.startJob("input.string= A B C D A B C D ABCD A B A", params);
+            System.out.println("-->2 " + result);
 
             // GET /jobs/<jobId>---Gets the result or status of a specific job
-            result = client.getJobResult("fdsfsfdfwfef");
-            System.out.println(result);
+            //result = client.getJobResult("A");
+            //System.out.println("-->3 " + result);
 
             // GET /jobs/<jobId>/config - Gets the job configuration
-            SparkJobConfig jobConfig = client.getConfig("fdsfsfdfwfef");
-            System.out.println(jobConfig);
+            //SparkJobConfig jobConfig = client.getConfig("A");
+            //System.out.println("--> " + jobConfig);
         } catch (SparkJobServerClientException e) {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public String jobserverUpdatejar(Class<?> cls) {
+        ISparkJobServerClient client = null;
+        try {
+            client = SparkJobServerClientFactory.getInstance().createSparkJobServerClient(jobserverUrl);
+            // GET /jars
+            List<SparkJobJarInfo> jarInfos = client.getJars();
+            for (SparkJobJarInfo jarInfo : jarInfos) {
+                System.out.println("--> " + jarInfo.toString());
+            }
+
+            File jar = JarFileUtils.getJarFile(cls);
+            // POST /jars/<appName>
+            client.uploadSparkJobJar(jar, jar.getName());
+
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+        return "OK";
     }
 
 }

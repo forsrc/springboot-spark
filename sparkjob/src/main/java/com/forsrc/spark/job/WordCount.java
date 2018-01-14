@@ -7,6 +7,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.SparkSession;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -20,6 +21,7 @@ public final class WordCount {
             System.exit(1);
         }
 
+        System.out.println("--> " + WordCount.class + " " + new Date());
         SparkSession spark = SparkSession.builder().appName("JavaWordCount").getOrCreate();
 
         JavaRDD<String> lines = spark.read().textFile(args[0]).javaRDD();

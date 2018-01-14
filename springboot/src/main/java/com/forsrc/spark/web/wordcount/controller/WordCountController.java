@@ -80,4 +80,13 @@ public class WordCountController {
         map.put("message", message);
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
+
+    @RequestMapping(value = "/jobserver/updatejar", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
+            MediaType.APPLICATION_JSON_UTF8_VALUE })
+    public ResponseEntity<Map<String, String>> updatejar(UriComponentsBuilder ucBuilder) throws FileNotFoundException {
+        Map<String, String> map = new HashMap<>();
+        String message = wordCountService.jobserverUpdatejar(com.forsrc.spark.job.WordCount.class);
+        map.put("message", message);
+        return new ResponseEntity<>(map, HttpStatus.OK);
+    }
 }

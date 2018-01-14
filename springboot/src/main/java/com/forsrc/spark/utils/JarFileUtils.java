@@ -13,7 +13,7 @@ import com.cloudera.livy.LivyClient;
 import com.cloudera.livy.LivyClientBuilder;
 import com.forsrc.spark.livy.job.WordCountJob;
 
-public class LivyUtils {
+public class JarFileUtils {
 
     public static interface Handler {
         public void handle(LivyClient livyClient);

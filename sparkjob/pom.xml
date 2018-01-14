@@ -106,21 +106,17 @@
             <artifactId>livy-client-http</artifactId>
             <version>0.3.0</version>
         </dependency>
-        <!-- <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-examples_2.10</artifactId>
-            <version>1.0.2</version>
-        </dependency> -->
+        <!-- <dependency> <groupId>org.apache.spark</groupId> <artifactId>spark-examples_2.10</artifactId> 
+            <version>1.0.2</version> </dependency> -->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_${spark.scala.version}</artifactId>
             <version>${spark.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>spark.jobserver</groupId>
+            <artifactId>job-server_2.11</artifactId>
+            <version>0.8.0</version>
         </dependency>
     </dependencies>
 
@@ -238,6 +234,10 @@
         <repository>
             <id>JBoss</id>
             <url>http://repository.jboss.com/maven2</url>
+        </repository>
+        <repository>
+            <id>jobserver</id>
+            <url>https://dl.bintray.com/spark-jobserver/maven/</url>
         </repository>
     </repositories>
 </project>

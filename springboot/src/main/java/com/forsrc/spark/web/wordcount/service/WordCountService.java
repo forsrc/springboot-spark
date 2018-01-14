@@ -17,4 +17,6 @@ public interface WordCountService {
     public String livyHelloworld();
 
     public String jobserverHelloworld();
+
+    public String jobserverUpdatejar(Class<?> cls);
 }

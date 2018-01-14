@@ -18,9 +18,9 @@ public final class HelloWorld {
             System.exit(1);
         }
 
-        SparkSession spark = SparkSession.builder().appName("JavaWordCount").getOrCreate();
+        SparkSession spark = SparkSession.builder().appName("helloworld").getOrCreate();
 
-        System.out.println("Hello world " + new Date());
+        System.out.println("--> Hello world " + new Date());
         spark.stop();
     }
 }
