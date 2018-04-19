@@ -12,7 +12,7 @@ import com.cloudera.livy.JobHandle;
 import com.cloudera.livy.LivyClient;
 import com.cloudera.livy.LivyClientBuilder;
 
-public class JarFileUtils {
+public class LivyUtils {
 
     public static interface Handler {
         public void handle(LivyClient livyClient);

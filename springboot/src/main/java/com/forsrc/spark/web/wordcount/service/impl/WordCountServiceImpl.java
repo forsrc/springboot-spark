@@ -2,16 +2,10 @@ package com.forsrc.spark.web.wordcount.service.impl;
 
 import static org.apache.spark.sql.functions.col;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -26,11 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.cloudera.livy.JobHandle;
-import com.cloudera.livy.LivyClient;
-import com.cloudera.livy.LivyClientBuilder;
-import com.forsrc.spark.livy.job.WordCountJob;
-import com.forsrc.spark.utils.LivyUtils;
 import com.forsrc.spark.web.wordcount.service.WordCountService;
 
 import scala.Tuple2;
