@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.forsrc.spark.web.wordcount.service.LivyWordCountService;
 import com.forsrc.spark.web.wordcount.service.WordCountService;
 
 @RestController
@@ -29,6 +30,9 @@ public class WordCountController {
 
     @Autowired
     private WordCountService wordCountService;
+
+    @Autowired
+    private LivyWordCountService livyWordCountService;
 
     @RequestMapping(value = "/test", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
             MediaType.APPLICATION_JSON_UTF8_VALUE })
@@ -41,13 +45,15 @@ public class WordCountController {
     @RequestMapping(value = "/wordcount", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
             MediaType.APPLICATION_JSON_UTF8_VALUE })
     public ResponseEntity<Map<String, Integer>> wordCount(UriComponentsBuilder ucBuilder) throws FileNotFoundException {
-        Map<String, Integer> map = wordCountService.wordCount(ResourceUtils.getFile("classpath:WordCount.txt").getAbsolutePath());
+        Map<String, Integer> map = wordCountService
+                .wordCount(ResourceUtils.getFile("classpath:WordCount.txt").getAbsolutePath());
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/wordcount/{word}", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
             MediaType.APPLICATION_JSON_UTF8_VALUE })
-    public ResponseEntity<Map<String, Integer>> count(@PathVariable("word") String word,UriComponentsBuilder ucBuilder) throws FileNotFoundException {
+    public ResponseEntity<Map<String, Integer>> count(@PathVariable("word") String word, UriComponentsBuilder ucBuilder)
+            throws FileNotFoundException {
         Map<String, Integer> map = new HashMap<>();
         int count = wordCountService.count(ResourceUtils.getFile("classpath:WordCount.txt").getAbsolutePath(), word);
         map.put(word, count);
@@ -56,34 +62,12 @@ public class WordCountController {
 
     @RequestMapping(value = "/livy/wordcount/{word}", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
             MediaType.APPLICATION_JSON_UTF8_VALUE })
-    public ResponseEntity<Map<String, Integer>> livycount(@PathVariable("word") String word, UriComponentsBuilder ucBuilder) throws FileNotFoundException {
+    public ResponseEntity<Map<String, Integer>> livycount(@PathVariable("word") String word,
+            UriComponentsBuilder ucBuilder) throws FileNotFoundException {
         Map<String, Integer> map = new HashMap<>();
-        int count = wordCountService.livyCount(ResourceUtils.getFile("classpath:WordCount.txt").getAbsolutePath(), word);
+        int count = livyWordCountService.livyCount(ResourceUtils.getFile("classpath:WordCount.txt").getAbsolutePath(),
+                word);
         map.put(word, count);
-        return new ResponseEntity<>(map, HttpStatus.OK);
-    }
-
-    @RequestMapping(value = "/livy/helloworld", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
-            MediaType.APPLICATION_JSON_UTF8_VALUE })
-    public ResponseEntity<Map<String, String>> livyHelloworld(UriComponentsBuilder ucBuilder) throws FileNotFoundException {
-        Map<String, String> map = new HashMap<>();
-        String message = wordCountService.livyHelloworld();
-        map.put("message", message);
-        return new ResponseEntity<>(map, HttpStatus.OK);
-    }
-
-    @RequestMapping(value = "/jobserver/helloworld", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
-            MediaType.APPLICATION_JSON_UTF8_VALUE })
-    public ResponseEntity<Map<String, Object>> jobserverHelloworld(UriComponentsBuilder ucBuilder) throws Exception {
-        Map<String, Object> map = wordCountService.jobserverWordCountExample();
-
-        return new ResponseEntity<>(map, HttpStatus.OK);
-    }
-
-    @RequestMapping(value = "/jobserver/updatejar", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
-            MediaType.APPLICATION_JSON_UTF8_VALUE })
-    public ResponseEntity<Map<String, Object>> updatejar(UriComponentsBuilder ucBuilder) throws Exception {
-        Map<String, Object> map = wordCountService.jobserverUpdatejar(com.forsrc.spark.job.WordCount.class);
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
 }
