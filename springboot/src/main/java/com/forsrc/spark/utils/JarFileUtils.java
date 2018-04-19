@@ -11,7 +11,6 @@ import com.cloudera.livy.Job;
 import com.cloudera.livy.JobHandle;
 import com.cloudera.livy.LivyClient;
 import com.cloudera.livy.LivyClientBuilder;
-import com.forsrc.spark.livy.job.WordCountJob;
 
 public class JarFileUtils {
 
