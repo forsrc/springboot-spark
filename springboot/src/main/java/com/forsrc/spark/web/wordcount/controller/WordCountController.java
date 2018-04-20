@@ -1,14 +1,12 @@
 package com.forsrc.spark.web.wordcount.controller;
 
 import java.io.FileNotFoundException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,10 +14,12 @@ import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.forsrc.spark.web.wordcount.service.LivyWordCountService;
+import com.forsrc.spark.web.wordcount.service.UploadJarService;
 import com.forsrc.spark.web.wordcount.service.WordCountService;
 
 @RestController
@@ -33,6 +33,9 @@ public class WordCountController {
 
     @Autowired
     private LivyWordCountService livyWordCountService;
+
+    @Autowired
+    private UploadJarService uploadJarService;
 
     @RequestMapping(value = "/test", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
             MediaType.APPLICATION_JSON_UTF8_VALUE })
@@ -69,5 +72,13 @@ public class WordCountController {
                 word);
         map.put(word, count);
         return new ResponseEntity<>(map, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/upload", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
+            MediaType.APPLICATION_JSON_UTF8_VALUE })
+    public ResponseEntity<String> upload(@RequestParam("jar") String jar, @RequestParam("appClass") String appClass,
+            @RequestParam("appName") String appName,  @RequestParam("url") String url, UriComponentsBuilder ucBuilder) throws FileNotFoundException {
+        uploadJarService.upload(url, jar, appName, appClass, new String[] {});
+        return new ResponseEntity<>(jar, HttpStatus.OK);
     }
 }
