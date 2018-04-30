@@ -22,13 +22,13 @@ public class UploadJarServiceImpl implements UploadJarService{
 
 
     @Override
-    public void upload(String url, String jar, String appName, String appClass, String[] args) {
+    public SubmitRestProtocolResponse upload(String url, String jar, String appName, String appClass, String[] args) {
         RestSubmissionClient rsc = new RestSubmissionClient(url);
         Map<String, String> sparkProps = new HashMap<>();
         sparkProps.put("spark.app.name", appName);
         sparkProps.put("spark.master", "local[*]");
         sparkProps.put("spark.jars", jar);
-        
+
 
         scala.collection.immutable.Map<String, String> envMap =
                 JavaConverters$.MODULE$.mapAsScalaMapConverter(new HashMap<String, String>()).asScala()
@@ -50,26 +50,26 @@ public class UploadJarServiceImpl implements UploadJarService{
 
 
         String appState;
-
+        SubmitRestProtocolResponse stat = null;
         while (true) {
             try {
                 Thread.sleep(3);
             } catch (InterruptedException e) {
             }
-            SubmitRestProtocolResponse stat = rsc.requestSubmissionStatus(submissionId, false);
+            stat = rsc.requestSubmissionStatus(submissionId, false);
             appState = getJsonProperty(stat.toJson(), "driverState");
             if (!(appState.equals(DriverState.SUBMITTED().toString()) ||
                     appState.equals(DriverState.RUNNING().toString()) ||
                     appState.equals(DriverState.RELAUNCHING().toString()) ||
                     appState.equals(DriverState.UNKNOWN().toString()))) {
                 System.out.println("Spark App completed with status: " + appState);
-                appState = appState;
                 break;
             }
         }
         if (!appState.equals(DriverState.FINISHED().toString())) {
-            throw new RuntimeException("Spark App submission " + submissionId + " failed with status " + appState);
+            //throw new RuntimeException("Spark App submission " + submissionId + " failed with status " + appState);
         }
+        return stat;
     }
 
     private String getJsonProperty(String json, String prop) {

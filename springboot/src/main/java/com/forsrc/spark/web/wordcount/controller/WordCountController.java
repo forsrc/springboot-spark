@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.spark.deploy.rest.SubmitRestProtocolResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,9 +77,9 @@ public class WordCountController {
 
     @RequestMapping(value = "/upload", method = { RequestMethod.GET, RequestMethod.POST }, produces = {
             MediaType.APPLICATION_JSON_UTF8_VALUE })
-    public ResponseEntity<String> upload(@RequestParam("jar") String jar, @RequestParam("appClass") String appClass,
+    public ResponseEntity<SubmitRestProtocolResponse> upload(@RequestParam("jar") String jar, @RequestParam("appClass") String appClass,
             @RequestParam("appName") String appName,  @RequestParam("url") String url, UriComponentsBuilder ucBuilder) throws FileNotFoundException {
-        uploadJarService.upload(url, jar, appName, appClass, new String[] {});
-        return new ResponseEntity<>(jar, HttpStatus.OK);
+        SubmitRestProtocolResponse srpr = uploadJarService.upload(url, jar, appName, appClass, new String[] {});
+        return new ResponseEntity<>(srpr, HttpStatus.OK);
     }
 }
